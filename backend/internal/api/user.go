@@ -1,6 +1,7 @@
 package api
 
 import (
+	authmiddleware "backend/internal/service/middleware"
 	"backend/internal/usecase/user"
 	"backend/pkg/chi/middleware"
 	"backend/pkg/chi/response"
@@ -10,10 +11,11 @@ import (
 	"net/http"
 )
 
-func RegisterUserHandlers(r chi.Router, usecase user.Usecase, logger zerolog.Logger) {
+func RegisterUserHandlers(r chi.Router, usecase user.Usecase, authmiddleware authmiddleware.AuthMiddleware, logger zerolog.Logger) {
 	res := userResource{usecase: usecase, logger: logger}
 	r.Route("/user", func(r chi.Router) {
 		r.Group(func(r chi.Router) {
+			r.Use(authmiddleware.HandleToken())
 			r.Post("/", middleware.APIWrapper(res.createUser))
 		})
 	})

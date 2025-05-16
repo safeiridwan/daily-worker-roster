@@ -3,7 +3,9 @@ package main
 import (
 	"backend/internal/api"
 	"backend/internal/config"
+	"backend/internal/service/middleware"
 	user "backend/internal/service/user"
+	"backend/internal/usecase/auth"
 	userusecase "backend/internal/usecase/user"
 	"backend/pkg/gorm/dbcontext"
 	"flag"
@@ -72,7 +74,7 @@ func main() {
 
 	server := http.Server{
 		Addr:    "localhost:5000",
-		Handler: BuildHandler(logger, dbcontext.New(db)),
+		Handler: BuildHandler(logger, dbcontext.New(db), cfg),
 	}
 
 	fmt.Println("Listening on localhost:5000")
@@ -83,7 +85,7 @@ func main() {
 	}
 }
 
-func BuildHandler(logger zerolog.Logger, db dbcontext.Sessions) http.Handler {
+func BuildHandler(logger zerolog.Logger, db dbcontext.Sessions, cfg *config.Config) http.Handler {
 	router := chi.NewRouter()
 	router.Use(
 		render.SetContentType(render.ContentTypeJSON),
@@ -98,11 +100,19 @@ func BuildHandler(logger zerolog.Logger, db dbcontext.Sessions) http.Handler {
 		ChiLoggerHandler(logger),
 	)
 
+	authMiddleware := middleware.Handler(
+		cfg.JWTSigningKey,
+		user.NewUserRepository(db),
+		logger,
+	)
+
 	api.RegisterHandlers(router, version)
+	authUseCase := auth.NewUsecase(user.NewService(user.NewUserRepository(db)), authMiddleware.Ja, cfg)
 	userUseCase := userusecase.NewUsecase(user.NewService(user.NewUserRepository(db)))
 
 	router.Route("/api/v1", func(router chi.Router) {
-		api.RegisterUserHandlers(router, userUseCase, logger)
+		api.RegisterAuthHandlers(router, authUseCase, authMiddleware, logger)
+		api.RegisterUserHandlers(router, userUseCase, authMiddleware, logger)
 	})
 
 	return router

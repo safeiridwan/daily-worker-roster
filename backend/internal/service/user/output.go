@@ -11,6 +11,7 @@ type UserOut struct {
 	Email     string     `json:"email"`
 	Name      string     `json:"name" `
 	Role      string     `json:"role"`
+	Password  string     `json:"password"`
 	CreatedAt time.Time  `json:"created_at"`
 	CreatedBy string     `json:"created_by"`
 	UpdatedAt *time.Time `json:"updated_at"`
@@ -25,6 +26,7 @@ func (u *UserOut) PopulateFromEntity(e *User) {
 	u.Email = e.Email.String
 	u.Name = e.Name.String
 	u.Role = e.Role.String
+	u.Password = e.Password.String
 	u.CreatedAt = e.CreatedAt.Time
 	u.CreatedBy = e.CreatedBy.String
 	if !e.UpdatedAt.Time.IsZero() {

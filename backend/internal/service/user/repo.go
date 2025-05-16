@@ -27,6 +27,7 @@ func (User) TableName() string { return "user" }
 
 type UserRepository interface {
 	GetByEmail(ctx context.Context, email string) (*User, error)
+	GetByUID(ctx context.Context, uid string) (*User, error)
 	SaveUser(ctx context.Context, user User) error
 }
 
@@ -44,6 +45,18 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*User, e
 	var user User
 	err := r.db.With(ctx, "user").
 		First(&user, "email = ?", email).
+		Error
+
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
+	return &user, err
+}
+
+func (r *userRepository) GetByUID(ctx context.Context, uid string) (*User, error) {
+	var user User
+	err := r.db.With(ctx, "user").
+		First(&user, "uid = ?", uid).
 		Error
 
 	if err == gorm.ErrRecordNotFound {

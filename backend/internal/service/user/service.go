@@ -7,6 +7,7 @@ import (
 
 type Service interface {
 	GetByEmail(ctx context.Context, email string) (*UserOut, error)
+	GetByUID(ctx context.Context, uid string) (*UserOut, error)
 	SaveUser(ctx context.Context, user User) error
 }
 
@@ -33,6 +34,21 @@ func (s *service) GetByEmail(ctx context.Context, email string) (*UserOut, error
 	out := &UserOut{}
 	out.PopulateFromEntity(user)
 
+	return out, nil
+}
+
+func (s *service) GetByUID(ctx context.Context, uid string) (*UserOut, error) {
+	user, err := s.repo.GetByUID(ctx, uid)
+	if err != nil {
+		zerolog.Ctx(ctx).Error().Err(err).Msg("")
+		return nil, err
+	}
+	if user == nil {
+		zerolog.Ctx(ctx).Error().Err(err).Msg("User not found")
+		return nil, err
+	}
+	out := &UserOut{}
+	out.PopulateFromEntity(user)
 	return out, nil
 }
 

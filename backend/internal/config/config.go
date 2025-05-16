@@ -8,12 +8,15 @@ import (
 )
 
 const (
-	defaultServerPort = 5000
+	defaultServerPort         = 5000
+	defaultJWTExpirationHours = 72
 )
 
 type Config struct {
-	ServerPort int    `yaml:"server_port" env:"SERVER_PORT"`
-	DSN        string `yaml:"dsn" env:"DSN"`
+	ServerPort    int    `yaml:"server_port" env:"SERVER_PORT"`
+	DSN           string `yaml:"dsn" env:"DSN"`
+	JWTExpiration int    `yaml:"jwt_expiration" env:"JWT_EXPIRATION"`
+	JWTSigningKey string `yaml:"jwt_signing_key" env:"JWT_SIGNING_KEY"`
 }
 
 func (c Config) Validate() error {
