@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    container_name: my_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: db_payd
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5438:5432"
+
+  backend:
+    build: ./backend
+    container_name: my_backend
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: user
+      DB_PASSWORD: password
+      DB_NAME: mydb
+    ports:
+      - "5000:8080"
+    depends_on:
+      - db
+
+  frontend:
+    build: ./frontend
+    container_name: my_frontend
+    ports:
+      - "5174:5173"
+    depends_on:
+      - backend
+
+volumes:
+  db_data:
