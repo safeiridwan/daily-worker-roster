@@ -3,6 +3,9 @@ package main
 import (
 	"backend/internal/api"
 	"backend/internal/config"
+	user "backend/internal/service/user"
+	userusecase "backend/internal/usecase/user"
+	"backend/pkg/gorm/dbcontext"
 	"flag"
 	"fmt"
 	"github.com/go-chi/chi/v5"
@@ -69,7 +72,7 @@ func main() {
 
 	server := http.Server{
 		Addr:    "localhost:5000",
-		Handler: BuildHandler(logger),
+		Handler: BuildHandler(logger, dbcontext.New(db)),
 	}
 
 	fmt.Println("Listening on localhost:5000")
@@ -80,7 +83,7 @@ func main() {
 	}
 }
 
-func BuildHandler(logger zerolog.Logger) http.Handler {
+func BuildHandler(logger zerolog.Logger, db dbcontext.Sessions) http.Handler {
 	router := chi.NewRouter()
 	router.Use(
 		render.SetContentType(render.ContentTypeJSON),
@@ -96,6 +99,11 @@ func BuildHandler(logger zerolog.Logger) http.Handler {
 	)
 
 	api.RegisterHandlers(router, version)
+	userUseCase := userusecase.NewUsecase(user.NewService(user.NewUserRepository(db)))
+
+	router.Route("/api/v1", func(router chi.Router) {
+		api.RegisterUserHandlers(router, userUseCase, logger)
+	})
 
 	return router
 }
