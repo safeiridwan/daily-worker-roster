@@ -4,8 +4,10 @@ import (
 	"backend/internal/api"
 	"backend/internal/config"
 	"backend/internal/service/middleware"
-	user "backend/internal/service/user"
+	"backend/internal/service/schedule"
+	"backend/internal/service/user"
 	"backend/internal/usecase/auth"
+	scheduleusecase "backend/internal/usecase/schedule"
 	userusecase "backend/internal/usecase/user"
 	"backend/pkg/gorm/dbcontext"
 	"flag"
@@ -109,10 +111,12 @@ func BuildHandler(logger zerolog.Logger, db dbcontext.Sessions, cfg *config.Conf
 	api.RegisterHandlers(router, version)
 	authUseCase := auth.NewUsecase(user.NewService(user.NewUserRepository(db)), authMiddleware.Ja, cfg)
 	userUseCase := userusecase.NewUsecase(user.NewService(user.NewUserRepository(db)))
+	scheduleUseCase := scheduleusecase.NewUsecase(schedule.NewService(schedule.NewScheduleRepository(db)))
 
 	router.Route("/api/v1", func(router chi.Router) {
 		api.RegisterAuthHandlers(router, authUseCase, authMiddleware, logger)
 		api.RegisterUserHandlers(router, userUseCase, authMiddleware, logger)
+		api.RegisterScheduleHandlers(router, scheduleUseCase, authMiddleware, logger)
 	})
 
 	return router
