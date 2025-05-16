@@ -21,12 +21,31 @@ type ScheduleOut struct {
 	DeletedBy string     `json:"deleted_by"`
 }
 
+func (o *ScheduleOut) PopulateFromEntity(e *Schedule) {
+	o.ID = e.ID
+	o.UID = e.UID
+	o.UserUID = e.UserUID
+	o.Date = e.Date.Time
+	o.StartTime = e.StartTime.Time
+	o.EndTime = e.EndTime.Time
+	o.CreatedAt = e.CreatedAt.Time
+	o.CreatedBy = e.CreatedBy.String
+	if !e.UpdatedAt.Time.IsZero() {
+		o.UpdatedAt = &e.UpdatedAt.Time
+	}
+	o.UpdatedBy = e.UpdatedBy.String
+	if !e.DeletedAt.Time.IsZero() {
+		o.DeletedAt = &e.DeletedAt.Time
+	}
+	o.DeletedBy = e.DeletedBy.String
+}
+
 type SchedulesOut struct {
 	Data  []ScheduleOut
 	Total int64
 }
 
-func (o *SchedulesOut) PopulateFromEntity(m []Schedule, total int64) {
+func (o *SchedulesOut) toList(m []Schedule, total int64) {
 	o.Data = make([]ScheduleOut, 0, len(m))
 	o.Total = total
 

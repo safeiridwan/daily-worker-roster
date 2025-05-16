@@ -17,6 +17,9 @@ func RegisterScheduleHandlers(r chi.Router, usecase scheduleusecase.Usecase, aut
 		r.Group(func(r chi.Router) {
 			r.Use(authmiddleware.HandleToken())
 			r.Post("/", middleware.APIWrapper(res.createSchedule))
+			r.Post("/{uid}", middleware.APIWrapper(res.editSchedule))
+			r.Post("/{uid}/approve", middleware.APIWrapper(res.approveSchedule))
+			r.Post("/{uid}/reject", middleware.APIWrapper(res.rejectSchedule))
 		})
 	})
 }
@@ -29,7 +32,6 @@ type scheduleResource struct {
 func (r scheduleResource) createSchedule(_ http.ResponseWriter, req *http.Request) response.Body {
 	ctx := req.Context()
 	identity := authmiddleware.CurrentUser(ctx)
-	identity.UserUID = "uuid"
 	var input scheduleusecase.ScheduleIn
 	if err := render.Bind(req, &input); err != nil {
 		r.logger.Error().Err(err).Msg("")
@@ -37,6 +39,51 @@ func (r scheduleResource) createSchedule(_ http.ResponseWriter, req *http.Reques
 	}
 
 	if err := r.usecase.CreateSchedule(ctx, input, *identity); err != nil {
+		r.logger.Error().Err(err).Msg("")
+		return response.InternalServerError(err.Error())
+	}
+
+	return response.OK("Successfully created schedule", nil)
+}
+
+func (r scheduleResource) editSchedule(_ http.ResponseWriter, req *http.Request) response.Body {
+	ctx := req.Context()
+	identity := authmiddleware.CurrentUser(ctx)
+	uid := chi.URLParam(req, "uid")
+
+	var input scheduleusecase.ScheduleIn
+	if err := render.Bind(req, &input); err != nil {
+		r.logger.Error().Err(err).Msg("")
+		return response.InvalidInput(err)
+	}
+
+	if err := r.usecase.EditSchedule(ctx, input, uid, *identity); err != nil {
+		r.logger.Error().Err(err).Msg("")
+		return response.InternalServerError(err.Error())
+	}
+
+	return response.OK("Successfully created schedule", nil)
+}
+
+func (r scheduleResource) approveSchedule(_ http.ResponseWriter, req *http.Request) response.Body {
+	ctx := req.Context()
+	identity := authmiddleware.CurrentUser(ctx)
+	uid := chi.URLParam(req, "uid")
+
+	if err := r.usecase.UpdateStatusSchedule(ctx, uid, "APPROVED", *identity); err != nil {
+		r.logger.Error().Err(err).Msg("")
+		return response.InternalServerError(err.Error())
+	}
+
+	return response.OK("Successfully created schedule", nil)
+}
+
+func (r scheduleResource) rejectSchedule(_ http.ResponseWriter, req *http.Request) response.Body {
+	ctx := req.Context()
+	identity := authmiddleware.CurrentUser(ctx)
+	uid := chi.URLParam(req, "uid")
+
+	if err := r.usecase.UpdateStatusSchedule(ctx, uid, "REJECTED", *identity); err != nil {
 		r.logger.Error().Err(err).Msg("")
 		return response.InternalServerError(err.Error())
 	}

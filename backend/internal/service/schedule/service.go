@@ -8,7 +8,9 @@ import (
 
 type Service interface {
 	SaveSchedule(ctx context.Context, schedule Schedule) error
+	UpdateSchedule(ctx context.Context, uid string, schedule Schedule) error
 	GetByRangeDate(ctx context.Context, date, startTime, endTime time.Time) (*SchedulesOut, error)
+	GetByUID(ctx context.Context, uid string) (*ScheduleOut, error)
 }
 
 type service struct {
@@ -29,6 +31,16 @@ func (s *service) SaveSchedule(ctx context.Context, schedule Schedule) error {
 	return nil
 }
 
+func (s *service) UpdateSchedule(ctx context.Context, uid string, schedule Schedule) error {
+	err := s.repo.UpdateSchedule(ctx, uid, schedule)
+	if err != nil {
+		zerolog.Ctx(ctx).Error().Err(err).Msg("")
+		return err
+	}
+
+	return nil
+}
+
 func (s *service) GetByRangeDate(ctx context.Context, date, startTime, endTime time.Time) (*SchedulesOut, error) {
 	schedules, total, err := s.repo.GetByRangeDate(ctx, date, startTime, endTime)
 	if err != nil {
@@ -37,7 +49,20 @@ func (s *service) GetByRangeDate(ctx context.Context, date, startTime, endTime t
 	}
 
 	out := &SchedulesOut{}
-	out.PopulateFromEntity(schedules, total)
+	out.toList(schedules, total)
+
+	return out, nil
+}
+
+func (s *service) GetByUID(ctx context.Context, uid string) (*ScheduleOut, error) {
+	scheduleEntity, err := s.repo.GetByUID(ctx, uid)
+	if err != nil {
+		zerolog.Ctx(ctx).Error().Err(err).Msg("")
+		return nil, err
+	}
+
+	out := &ScheduleOut{}
+	out.PopulateFromEntity(scheduleEntity)
 
 	return out, nil
 }

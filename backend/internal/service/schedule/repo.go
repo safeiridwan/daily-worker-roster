@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 	"time"
 )
 
@@ -28,7 +29,9 @@ func (Schedule) TableName() string { return "schedule" }
 
 type ScheduleRepository interface {
 	SaveSchedule(ctx context.Context, schedule Schedule) error
+	UpdateSchedule(ctx context.Context, uid string, schedule Schedule) error
 	GetByRangeDate(ctx context.Context, date, startTime, endTime time.Time) ([]Schedule, int64, error)
+	GetByUID(ctx context.Context, uid string) (*Schedule, error)
 }
 
 type scheduleRepository struct {
@@ -43,6 +46,10 @@ func NewScheduleRepository(db dbcontext.Sessions) ScheduleRepository {
 
 func (r *scheduleRepository) SaveSchedule(ctx context.Context, schedule Schedule) error {
 	return r.db.With(ctx).Create(&schedule).Error
+}
+
+func (r *scheduleRepository) UpdateSchedule(ctx context.Context, uid string, schedule Schedule) error {
+	return r.db.With(ctx, "schedule").Model(&Schedule{}).Where("uid = ?", uid).Updates(schedule).Error
 }
 
 func (r *scheduleRepository) GetByRangeDate(ctx context.Context, date, startTime, endTime time.Time) ([]Schedule, int64, error) {
@@ -63,4 +70,16 @@ func (r *scheduleRepository) GetByRangeDate(ctx context.Context, date, startTime
 	}
 
 	return schedules, int64(len(schedules)), nil
+}
+
+func (r *scheduleRepository) GetByUID(ctx context.Context, uid string) (*Schedule, error) {
+	var schedule Schedule
+	err := r.db.With(ctx, "schedule").
+		First(&schedule, "uid = ?", uid).
+		Error
+
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
+	return &schedule, err
 }
