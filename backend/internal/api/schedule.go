@@ -5,6 +5,7 @@ import (
 	scheduleusecase "backend/internal/usecase/schedule"
 	"backend/pkg/chi/middleware"
 	"backend/pkg/chi/response"
+	"backend/pkg/gorm/utils"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/rs/zerolog"
@@ -16,6 +17,7 @@ func RegisterScheduleHandlers(r chi.Router, usecase scheduleusecase.Usecase, aut
 	r.Route("/schedule", func(r chi.Router) {
 		r.Group(func(r chi.Router) {
 			r.Use(authmiddleware.HandleToken())
+			r.Get("/", middleware.APIWrapper(res.getSchedules))
 			r.Post("/", middleware.APIWrapper(res.createSchedule))
 			r.Post("/{uid}", middleware.APIWrapper(res.editSchedule))
 			r.Post("/{uid}/approve", middleware.APIWrapper(res.approveSchedule))
@@ -27,6 +29,17 @@ func RegisterScheduleHandlers(r chi.Router, usecase scheduleusecase.Usecase, aut
 type scheduleResource struct {
 	usecase scheduleusecase.Usecase
 	logger  zerolog.Logger
+}
+
+func (r scheduleResource) getSchedules(_ http.ResponseWriter, req *http.Request) response.Body {
+	ctx := req.Context()
+	filters := utils.ParseQueryParams(req)
+	result, err := r.usecase.GetSchedules(ctx, filters)
+	if err != nil {
+		return response.InternalServerError(err.Error())
+	}
+
+	return response.OK("Success", result)
 }
 
 func (r scheduleResource) createSchedule(_ http.ResponseWriter, req *http.Request) response.Body {

@@ -15,6 +15,7 @@ type Usecase interface {
 	CreateSchedule(ctx context.Context, input ScheduleIn, currentUser middleware.Identity) error
 	EditSchedule(ctx context.Context, input ScheduleIn, uid string, currentUser middleware.Identity) error
 	UpdateStatusSchedule(ctx context.Context, uid, status string, currentUser middleware.Identity) error
+	GetSchedules(ctx context.Context, filters map[string]any) (*SchedulesOut, error)
 }
 
 type usecase struct {
@@ -259,4 +260,17 @@ func (u *usecase) UpdateStatusSchedule(ctx context.Context, uid, status string, 
 	}
 
 	return nil
+}
+
+func (u *usecase) GetSchedules(ctx context.Context, filters map[string]any) (*SchedulesOut, error) {
+	schedules, err := u.scheduleService.GetSchedules(ctx, filters)
+	if err != nil {
+		zerolog.Ctx(ctx).Error().Err(err).Msg("")
+		return nil, err
+	}
+
+	out := &SchedulesOut{}
+	out.toList(schedules.Data, schedules.Total)
+
+	return out, nil
 }

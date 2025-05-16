@@ -2,10 +2,13 @@ package schedule
 
 import (
 	"backend/pkg/gorm/dbcontext"
+	"backend/pkg/gorm/utils"
 	"context"
 	"database/sql"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+	"strconv"
 	"time"
 )
 
@@ -32,6 +35,7 @@ type ScheduleRepository interface {
 	UpdateSchedule(ctx context.Context, uid string, schedule Schedule) error
 	GetByRangeDate(ctx context.Context, date, startTime, endTime time.Time) ([]Schedule, int64, error)
 	GetByUID(ctx context.Context, uid string) (*Schedule, error)
+	Query(ctx context.Context, filters map[string]any) ([]Schedule, int64, error)
 }
 
 type scheduleRepository struct {
@@ -82,4 +86,33 @@ func (r *scheduleRepository) GetByUID(ctx context.Context, uid string) (*Schedul
 		return nil, nil
 	}
 	return &schedule, err
+}
+
+func (r scheduleRepository) Query(ctx context.Context, filters map[string]any) ([]Schedule, int64, error) {
+	var schedules []Schedule
+	var total int64
+	query := utils.BuildWhere(r.db.With(ctx, "schedule").Preload(clause.Associations), filters)
+	if limitStr, ok := filters["limit"].(string); ok {
+		if limit, err := strconv.Atoi(limitStr); err == nil && limit > 0 {
+			query.Limit(limit)
+		}
+	}
+
+	if offsetStr, ok := filters["offset"].(string); ok {
+		if offset, err := strconv.Atoi(offsetStr); err == nil && offset > 0 {
+			query.Offset(offset)
+		}
+	}
+
+	err := query.
+		Order(filters["order_by"]).
+		Find(&schedules).
+		Error
+
+	if err != nil {
+		return schedules, total, err
+	}
+
+	err = query.Limit(-1).Offset(-1).Count(&total).Error
+	return schedules, total, err
 }

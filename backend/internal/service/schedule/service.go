@@ -11,6 +11,7 @@ type Service interface {
 	UpdateSchedule(ctx context.Context, uid string, schedule Schedule) error
 	GetByRangeDate(ctx context.Context, date, startTime, endTime time.Time) (*SchedulesOut, error)
 	GetByUID(ctx context.Context, uid string) (*ScheduleOut, error)
+	GetSchedules(ctx context.Context, filters map[string]any) (*SchedulesOut, error)
 }
 
 type service struct {
@@ -63,6 +64,19 @@ func (s *service) GetByUID(ctx context.Context, uid string) (*ScheduleOut, error
 
 	out := &ScheduleOut{}
 	out.PopulateFromEntity(scheduleEntity)
+
+	return out, nil
+}
+
+func (s *service) GetSchedules(ctx context.Context, filters map[string]any) (*SchedulesOut, error) {
+	schedules, total, err := s.repo.Query(ctx, filters)
+	if err != nil {
+		zerolog.Ctx(ctx).Error().Err(err).Msg("")
+		return nil, err
+	}
+
+	out := &SchedulesOut{}
+	out.toList(schedules, total)
 
 	return out, nil
 }
