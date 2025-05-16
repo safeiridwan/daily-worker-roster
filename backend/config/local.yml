@@ -1,2 +1,2 @@
 server_port: 5001
-dsn: "postgres://127.0.0.1:5432/postgres?sslmode=disable&user=postgres&password=postgres&TimeZone=Asia/Jakarta"
+dsn: "postgres://127.0.0.1:5432/go_restful?sslmode=disable&user=postgres&password=postgres&TimeZone=Asia/Jakarta"

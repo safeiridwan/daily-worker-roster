@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	defaultServerPort = 8080
+	defaultServerPort = 5000
 )
 
 type Config struct {
